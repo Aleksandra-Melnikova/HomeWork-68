@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axiosAPI from "../../axiosAPI.ts";
 import { RootState } from "../../app/store.ts";
+import { toast } from "react-toastify";
 
 interface FormState {
   title: string;
@@ -22,9 +23,15 @@ export const onSubmitTitle = createAsyncThunk<
   { state: RootState }
 >("tasks/onSubmit", async (_arg, thunkAPI) => {
   const currentValueCounterFromState = thunkAPI.getState().form.title;
-  await axiosAPI.post("tasks.json", { title: currentValueCounterFromState, status: false});
+  if (currentValueCounterFromState) {
+    await axiosAPI.post("tasks.json", {
+      title: currentValueCounterFromState,
+      status: false,
+    });
+  } else {
+    toast.error("Fill in the field");
+  }
 });
-
 
 export const formSlice = createSlice({
   name: "form",
@@ -36,11 +43,12 @@ export const formSlice = createSlice({
     clearForm: (state: FormState) => {
       state.title = "";
       state.status = false;
-    }
+    },
   },
   extraReducers(builder) {
     builder
       .addCase(onSubmitTitle.pending, (state) => {
+        state.isLoading = state.title.trim().length > 0;
         state.isLoading = true;
         state.error = false;
       })
@@ -56,4 +64,4 @@ export const formSlice = createSlice({
 
 export const formReducer = formSlice.reducer;
 
-export const { changeTitle,clearForm } = formSlice.actions;
+export const { changeTitle, clearForm } = formSlice.actions;
