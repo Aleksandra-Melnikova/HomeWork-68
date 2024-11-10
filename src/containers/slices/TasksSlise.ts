@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import axiosAPI from '../../axiosAPI.ts';
 import { IDataFromAPI, ITask } from '../../types';
+import { RootState } from '../../app/store.ts';
 
 interface TasksState {
   tasks: ITask[]
@@ -18,20 +19,19 @@ export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async ()=>{
     const {data:tasks} = await axiosAPI<IDataFromAPI | null>('tasks.json');
     return tasks || 0;
 });
-//
-// export const fetchTasks = createAsyncThunk<void,void,>('tasks/fetchTasks', async (_arg,)=>{
-//   const response = await axiosAPI('tasks.json');
-//   const tasksObjects:IDataFromAPI = response.data;
-//  const tasks = Object.keys(response.data).map((taskID: string) => {
-//     return {
-//       id: taskID,
-//       title: tasksObjects[taskID].title
-//     };
-//   })
-//     console.log(tasks);
 
- //    return tasks
- // });
+export const changeInputCheck = createAsyncThunk<void, {id:string}, {state:RootState} >('tasks/changeInputCheck', async (_arg,thunkAPI)=>{
+let currentObg;
+for (let index = 0; index < thunkAPI.getState().tasks.tasks.length; index++) {
+  if(thunkAPI.getState().tasks.tasks[index].id === _arg.id){
+    currentObg = thunkAPI.getState().tasks.tasks[index];
+}}
+  await axiosAPI.put(`tasks/${_arg.id}.json`, currentObg);
+});
+
+export const deleteTask = createAsyncThunk<void, {idDelete:string}, {state:RootState} >('tasks/deleteTask', async (_arg)=>{
+  await axiosAPI.delete(`tasks/${_arg.idDelete}.json`);
+});
 
 
 
@@ -39,18 +39,12 @@ export const tasksSlice = createSlice({
   name: "tasks",
   initialState,
   reducers: {
-    getData: (state: TasksState, action: PayloadAction<IDataFromAPI>) => {
-      if(action.payload){
-        const tasksObjects = action.payload;
-        state.tasks = Object.keys(tasksObjects).map((taskID: string) => {
-          return {
-            id: taskID,
-            title: tasksObjects[taskID].title,
-            status: false,
-          };
-        }) ;
-      }
-
+    changeCheck: (state: TasksState, action: PayloadAction<string>) => {
+      state.tasks.map(task=>{
+        if(task.id === action.payload){
+          task.status = !task.status;
+        }
+      });
     },
   },
   extraReducers(builder) {
@@ -61,13 +55,13 @@ export const tasksSlice = createSlice({
       })
       .addCase(fetchTasks.fulfilled, (state,action) => {
         state.isLoading = true;
-        const postResponseNew = Object.entries(action.payload);
+        const responseNew = Object.entries(action.payload);
         const array: ITask[] = [];
-        for (let i = 0; i < postResponseNew.length; i++) {
+        for (let i = 0; i < responseNew.length; i++) {
           const obj: ITask= {
-            id: postResponseNew[i][0],
-            title: postResponseNew[i][1].title,
-            status:false,
+            id: responseNew[i][0],
+            title: responseNew[i][1].title,
+            status: responseNew[i][1].status,
           };
           array.push(obj);
         }
@@ -76,10 +70,35 @@ export const tasksSlice = createSlice({
       .addCase(fetchTasks.rejected, (state) => {
         state.isLoading = false;
         state.error = true;
+      })
+      .addCase( changeInputCheck.pending, (state) => {
+      state.isLoading = true;
+      state.error = false;
+      })
+      .addCase( changeInputCheck.fulfilled, (state) => {
+        state.isLoading = false;
+
+      })
+      .addCase( changeInputCheck.rejected, (state) => {
+        state.isLoading = false;
+        state.error = true;
+      })
+      .addCase( deleteTask.pending, (state) => {
+        state.isLoading = true;
+        state.error = false;
+      })
+      .addCase( deleteTask.fulfilled, (state) => {
+        state.isLoading = false;
+
+      })
+      .addCase( deleteTask.rejected, (state) => {
+        state.isLoading = false;
+        state.error = true;
       });
+
   }
 });
 
 export const  tasksReducer = tasksSlice.reducer;
 
-export const {getData} =  tasksSlice.actions;
+export const { changeCheck} =  tasksSlice.actions;

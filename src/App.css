@@ -1,0 +1,18 @@
+.buttons-ic {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background-color: transparent;
+  margin-left: 40px;
+  background-size: 30px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 10px;
+}
+.button-reset {
+  background-image: url("https://s1.iconbird.com/ico/2013/9/452/w448h5121380477116trash.png");
+}
+
+.buttons-ic:hover {
+  box-shadow: 1px 1px 1px 1px gray;
+}
